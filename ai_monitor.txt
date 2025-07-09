@@ -3,9 +3,9 @@ from collections import deque
 from datetime import datetime
 from threat_intel import ThreatIntelAggregator
 
-# Use file path relative to this script for portability
 BASELINE_FILE = os.path.join(os.path.dirname(__file__), "baseline.json")
 MONITORED_HOSTS = ["8.8.8.8", "1.1.1.1"]
+MIN_HISTORY = 20
 
 class SelfLearningMonitor:
     def __init__(self, window=100):
@@ -20,7 +20,6 @@ class SelfLearningMonitor:
         self.baseline = {}
         self.feedback = {}
         self.load_baseline()
-
         self.intel = ThreatIntelAggregator()
         self.intel.start_background(interval=1800)
         self.current_iocs = set()
@@ -56,15 +55,20 @@ class SelfLearningMonitor:
             ('fail', self.fail_login_history)
         ]:
             arr = list(hist)
-            if len(arr) >= 20:
-                self.baseline[k] = (float(sum(arr)) / len(arr), float((sum((x - sum(arr)/len(arr))**2 for x in arr)/len(arr))**0.5))
+            if len(arr) >= MIN_HISTORY:
+                mean = float(sum(arr)) / len(arr)
+                std = float((sum((x - mean) ** 2 for x in arr) / len(arr)) ** 0.5)
+                self.baseline[k] = (mean, std)
         for host, hist in self.host_status.items():
             arr = list(hist)
-            if len(arr) >= 20:
-                self.baseline[host] = (float(sum(arr)) / len(arr), float((sum((x - sum(arr)/len(arr))**2 for x in arr)/len(arr))**0.5))
+            if len(arr) >= MIN_HISTORY:
+                mean = float(sum(arr)) / len(arr)
+                std = float((sum((x - mean) ** 2 for x in arr) / len(arr)) ** 0.5)
+                self.baseline[host] = (mean, std)
 
     def detect_anomaly(self):
-        if len(self.cpu_history) < 20: return ["Learning..."], False
+        if len(self.cpu_history) < MIN_HISTORY:
+            return ["Learning..."], False
         anomalies = []
         metrics = [
             ('cpu', self.cpu_history, "CPU"),
@@ -120,7 +124,6 @@ class SelfLearningMonitor:
 
     def ping_host(self, host):
         try:
-            # Use '-W' (capital W) for Linux, '-w' for macOS
             r = subprocess.run(['ping', '-c', '1', '-W', '1', host], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out = r.stdout.decode()
             ms = [float(x.split('=')[1].replace(' ms','')) for x in out.split() if "time=" in x]
@@ -172,15 +175,23 @@ class SelfLearningMonitor:
             'baseline': self.baseline,
             'feedback': self.feedback
         }
-        with open(BASELINE_FILE, "w") as f:
-            json.dump(data, f)
+        try:
+            with open(BASELINE_FILE, "w") as f:
+                json.dump(data, f)
+            # print(f"[DEBUG] Baseline saved to {BASELINE_FILE}")
+        except Exception as e:
+            print(f"[ERROR] Could not save baseline: {e}")
 
     def load_baseline(self):
         if os.path.exists(BASELINE_FILE):
-            with open(BASELINE_FILE, "r") as f:
-                data = json.load(f)
-                self.baseline = data.get('baseline', {})
-                self.feedback = data.get('feedback', {})
+            try:
+                with open(BASELINE_FILE, "r") as f:
+                    data = json.load(f)
+                    self.baseline = data.get('baseline', {})
+                    self.feedback = data.get('feedback', {})
+                # print(f"[DEBUG] Baseline loaded from {BASELINE_FILE}")
+            except Exception as e:
+                print(f"[ERROR] Could not load baseline: {e}")
 
     def feedback_correction(self, anomaly_label, value):
         self.feedback[f"{anomaly_label}-{int(value)}"] = True
