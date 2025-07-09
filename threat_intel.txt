@@ -34,7 +34,10 @@ class ThreatIntelAggregator:
 
     def background_refresh(self, interval=1800):
         while True:
-            self.fetch_all()
+            try:
+                self.fetch_all()
+            except Exception as e:
+                print(f"ThreatIntelAggregator fetch error: {e}")
             time.sleep(interval)
 
     def start_background(self, interval=1800):

@@ -3,7 +3,8 @@ from collections import deque
 from datetime import datetime
 from threat_intel import ThreatIntelAggregator
 
-BASELINE_FILE = "/opt/shaydz/baseline.json"
+# Use file path relative to this script for portability
+BASELINE_FILE = os.path.join(os.path.dirname(__file__), "baseline.json")
 MONITORED_HOSTS = ["8.8.8.8", "1.1.1.1"]
 
 class SelfLearningMonitor:
@@ -108,15 +109,19 @@ class SelfLearningMonitor:
                 return -1
 
     def get_gateway(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return '.'.join(ip.split('.')[:3]) + '.1'
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return '.'.join(ip.split('.')[:3]) + '.1'
+        except Exception:
+            return "192.168.1.1"  # fallback guess
 
     def ping_host(self, host):
         try:
-            r = subprocess.run(['ping', '-c', '1', '-w', '1', host], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # Use '-W' (capital W) for Linux, '-w' for macOS
+            r = subprocess.run(['ping', '-c', '1', '-W', '1', host], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out = r.stdout.decode()
             ms = [float(x.split('=')[1].replace(' ms','')) for x in out.split() if "time=" in x]
             return ms[0] if ms else -1
@@ -124,13 +129,16 @@ class SelfLearningMonitor:
             return -1
 
     def failed_logins(self):
-        try:
-            with open('/var/log/auth.log') as f:
-                lines = f.readlines()[-500:]
-                fails = sum(1 for line in lines if "Failed password" in line and "invalid user" not in line)
-                return fails
-        except Exception:
-            return 0
+        log_files = ['/var/log/auth.log', '/var/log/secure']
+        count = 0
+        for log in log_files:
+            try:
+                with open(log) as f:
+                    lines = f.readlines()[-500:]
+                    count += sum(1 for line in lines if "Failed password" in line and "invalid user" not in line)
+            except Exception:
+                continue
+        return count
 
     def status_report(self):
         t = datetime.now().strftime("%H:%M:%S")

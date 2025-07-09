@@ -1,8 +1,9 @@
 from flask import Flask, request, session, redirect, url_for, render_template_string
 import hashlib, os, json
 
-ADMIN_FILE = "/opt/shaydz/admin_user.json"
-API_KEY_FILE = "/opt/shaydz/.api_key"
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+ADMIN_FILE = os.path.join(THIS_DIR, "admin_user.json")
+API_KEY_FILE = os.path.join(THIS_DIR, ".api_key")
 
 def hash_pass(p):
     return hashlib.sha256(p.encode()).hexdigest()
@@ -14,12 +15,22 @@ def load_admin():
     return None
 
 def save_admin(username, password):
-    with open(ADMIN_FILE, "w") as f:
-        json.dump({"username": username, "password": hash_pass(password)}, f)
+    try:
+        with open(ADMIN_FILE, "w") as f:
+            json.dump({"username": username, "password": hash_pass(password)}, f)
+        return True
+    except Exception as e:
+        print("Failed to save admin user:", e)
+        return False
 
 def save_api_key(key):
-    with open(API_KEY_FILE, "w") as f:
-        json.dump({"api_key": key}, f)
+    try:
+        with open(API_KEY_FILE, "w") as f:
+            json.dump({"api_key": key}, f)
+        return True
+    except Exception as e:
+        print("Failed to save API key:", e)
+        return False
 
 def load_api_key():
     if os.path.exists(API_KEY_FILE):
@@ -129,8 +140,10 @@ def run_admin_ui(monitor):
         msg = ""
         if not admin:
             if request.method == "POST":
-                save_admin(request.form["username"], request.form["password"])
-                return redirect(url_for('dashboard'))
+                if not save_admin(request.form["username"], request.form["password"]):
+                    msg = "Failed to save admin account. Check permissions."
+                else:
+                    return redirect(url_for('dashboard'))
             return render_template_string(TEMPLATE_LOGIN, msg="Set up your admin account.")
         if request.method == "POST":
             user, pw = request.form["username"], request.form["password"]
@@ -171,8 +184,10 @@ def run_admin_ui(monitor):
     def settings():
         msg = ""
         if request.method == "POST":
-            save_api_key(request.form.get("api_key", ""))
-            msg = "API Key updated."
+            if save_api_key(request.form.get("api_key", "")):
+                msg = "API Key updated."
+            else:
+                msg = "Failed to save API Key. Check permissions."
         return render_template_string(TEMPLATE_SETTINGS, msg=msg)
 
     @app.route("/logout")
