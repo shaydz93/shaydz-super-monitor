@@ -1,4 +1,6 @@
-# ShaydZ Super Monitor v2.0 - Production Release
+# S h a y d Z Super Monitor - Release Notes
+
+## Version 1.0 - Initial Release (July 18, 2025)
 
 ## Release Notes
 
@@ -180,6 +182,6 @@ MIT License - See LICENSE file for details
 
 ---
 
-**ShaydZ Super Monitor v2.0 - Production-ready network monitoring with AI-powered insights.**
+**ShaydZ Super Monitor v1.0 - Production-ready network monitoring with AI-powered insights.**
 
 **Monitor smarter. Secure better. Deploy with confidence.**

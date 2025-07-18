@@ -1,4 +1,4 @@
-# S h a y d Z Super Monitor v2.0
+# S h a y d Z Super Monitor
 
 ![Python](https://img.shields.io/badge/python-3.8+-blue?logo=python)
 ![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi%20%7C%20Linux-red?logo=raspberry-pi)
@@ -13,7 +13,7 @@
 
 ---
 
-## 🚀 **What's New in v2.0**
+## 🚀 **Features**
 
 ### 🧠 **AI-Powered Detection**
 - **Local AI Processing**: Privacy-first anomaly detection with no external dependencies
@@ -281,7 +281,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 - **[Installation Guide](#quick-start)**: Get started in minutes
 - **[Production Guide](PRODUCTION_GUIDE.md)**: Deploy in production
-- **[Release Notes](RELEASE_NOTES.md)**: Version 2.0 features
+- **[Release Notes](RELEASE_NOTES.md)**: Version 1.0 features
 - **[Health Check](health_check.sh)**: Monitor system health
 
 ## 🧹 **Development & Cleanup**
@@ -303,4 +303,4 @@ This removes:
 
 **Monitor smarter. Secure better. Deploy with confidence.**
 
-**S h a y d Z Super Monitor v2.0 - Where AI meets network security.**
+**S h a y d Z Super Monitor - Where AI meets network security.**
