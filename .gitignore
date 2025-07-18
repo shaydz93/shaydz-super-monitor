@@ -1,6 +1,41 @@
-venv/
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+.tox/
+.env
+.venv
+venv/
+
+# Application specific - user/runtime generated files
 baseline.json
 admin_user.json
 .api_key
+ai_config.json
+ai_learning.json
+*.log
+*.log.*
+
+# System files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*
+
+# Temporary files
+*.tmp
+*.bak
+*.orig

@@ -19,16 +19,25 @@ class ThreatIntelAggregator:
 
     def fetch_rss(self, url, max_items=5):
         try:
-            d = feedparser.parse(url)
+            response = requests.get(url, headers=self.headers, timeout=10)
+            response.raise_for_status()
+            d = feedparser.parse(response.content)
+            if d.bozo:
+                return [("Feed Parse Error", f"Malformed feed: {url}")]
             return [(entry.title, entry.link) for entry in d.entries[:max_items]]
+        except requests.exceptions.RequestException as e:
+            return [("Network Error", f"Failed to fetch {url}: {str(e)}")]
         except Exception as e:
-            return [("Feed Error", str(e))]
+            return [("Feed Error", f"Error processing {url}: {str(e)}")]
 
     def fetch_all(self):
         data = {}
         for name, url in self.feeds:
-            results = self.fetch_rss(url)
-            data[name] = results
+            try:
+                results = self.fetch_rss(url)
+                data[name] = results
+            except Exception as e:
+                data[name] = [("Error", f"Failed to fetch {name}: {str(e)}")]
         self.intel_data = data
         return data
 

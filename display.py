@@ -37,14 +37,19 @@ class EPDDisplay:
         if not self.epd:
             print("[EPD] Simulated Display:", lines)
             return
-        self.epd.init()
-        image = Image.new('1', (self.height, self.width), 255)
-        draw = ImageDraw.Draw(image)
-        y = 0
-        for line in lines:
-            draw.text((0, y), line, font=self.font, fill=0)
-            y += 14
-        self.epd.display(self.epd.getbuffer(image))
+        try:
+            self.epd.init()
+            image = Image.new('1', (self.height, self.width), 255)
+            draw = ImageDraw.Draw(image)
+            y = 0
+            for line in lines:
+                if y + 14 > self.width:  # Prevent text from going off display
+                    break
+                draw.text((0, y), str(line), font=self.font, fill=0)
+                y += 14
+            self.epd.display(self.epd.getbuffer(image))
+        except Exception as e:
+            print(f"[EPD] Display error: {e}")
 
     def show_shaydz_welcome(self):
         if not self.epd:
@@ -58,14 +63,26 @@ class EPDDisplay:
         except Exception:
             font_large = font_small = ImageFont.load_default()
         shaydz_text = "S h a y d Z"
-        w, h = draw.textsize(shaydz_text, font=font_large)
+        bbox = draw.textbbox((0, 0), shaydz_text, font=font_large)
+        w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
         x = (image.width - w) // 2
         draw.text((x, 15), shaydz_text, font=font_large, fill=0)
         sub = "Super Monitor"
-        w2, h2 = draw.textsize(sub, font=font_small)
+        bbox2 = draw.textbbox((0, 0), sub, font=font_small)
+        w2, h2 = bbox2[2] - bbox2[0], bbox2[3] - bbox2[1]
         draw.text(((image.width - w2) // 2, 55), sub, font=font_small, fill=0)
         self.epd.display(self.epd.getbuffer(image))
 
     def sleep(self):
         if self.epd:
-            self.epd.sleep()
+            try:
+                self.epd.sleep()
+            except Exception as e:
+                print(f"[EPD] Sleep error: {e}")
+
+    def __del__(self):
+        """Clean up display when object is destroyed"""
+        try:
+            self.sleep()
+        except Exception:
+            pass
